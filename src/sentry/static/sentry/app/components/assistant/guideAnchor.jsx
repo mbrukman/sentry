@@ -2,7 +2,6 @@ import {ClassNames} from '@emotion/core';
 import PropTypes from 'prop-types';
 import React from 'react';
 import styled from '@emotion/styled';
-import $ from 'jquery';
 import createReactClass from 'create-react-class';
 import Reflux from 'reflux';
 import theme from 'app/utils/theme';
@@ -45,10 +44,10 @@ const GuideAnchor = createReactClass({
 
   componentDidUpdate(_prevProps, prevState) {
     if (this.containerElement && !prevState.active && this.state.active) {
-      const windowHeight = $(window).height();
-      $('html,body').animate({
-        scrollTop: $(this.containerElement).offset().top - windowHeight / 2,
-      });
+      const {_left, top} = this.containerElement.getBoundingClientRect();
+      const scrollTop = window.pageYOffset;
+      const centerElement = top + scrollTop - window.innerHeight / 2;
+      window.scrollTo({top: centerElement});
     }
   },
 
