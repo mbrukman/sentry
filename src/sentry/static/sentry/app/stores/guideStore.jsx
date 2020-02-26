@@ -1,11 +1,14 @@
 import {browserHistory} from 'react-router';
 import Reflux from 'reflux';
+import * as Sentry from '@sentry/browser';
+
+import {Client} from 'app/api';
+import {trackAnalyticsEvent} from 'app/utils/analytics';
+import ConfigStore from 'app/stores/configStore';
+import getGuideContent from 'app/components/assistant/getGuideContent';
 import GuideActions from 'app/actions/guideActions';
 import OrganizationsActions from 'app/actions/organizationsActions';
 import ProjectActions from 'app/actions/projectActions';
-import {Client} from 'app/api';
-import ConfigStore from 'app/stores/configStore';
-import {trackAnalyticsEvent} from 'app/utils/analytics';
 
 const GuideStore = Reflux.createStore({
   init() {
@@ -69,8 +72,20 @@ const GuideStore = Reflux.createStore({
       return;
     }
 
-    this.state.guides = data;
-    this.updateCurrentGuide();
+    try {
+      const guideContent = getGuideContent();
+      const guides = Object.entries(data).reduce((acc, [key, value]) => {
+        if (key in guideContent) {
+          acc[key] = {...value, ...guideContent[key]};
+        }
+        return acc;
+      }, {});
+
+      this.state.guides = guides;
+      this.updateCurrentGuide();
+    } catch (e) {
+      Sentry.captureException(e);
+    }
   },
 
   onCloseGuide() {

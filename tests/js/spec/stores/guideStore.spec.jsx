@@ -4,72 +4,70 @@ import GuideAnchor from 'app/components/assistant/guideAnchor';
 import ConfigStore from 'app/stores/configStore';
 
 describe('GuideStore', function() {
-  const anchor1 = <GuideAnchor target="target 1" />;
-  const anchor2 = <GuideAnchor target="target 2" />;
   let data;
 
   beforeEach(function() {
     ConfigStore.config = {
       user: {
-        isSuperuser: true,
+        isSuperuser: false,
+        dateJoined: new Date(2020, 0, 1),
       },
     };
+
     GuideStore.init();
     data = {
-      Guide1: {
+      issue_detail: {
         id: 1,
-        required_targets: ['target 1'],
-        steps: [
-          {message: 'Message 1', target: 'target 1', title: '1. Title 1'},
-          {message: 'Message 2', target: 'target 2', title: '2. Title 2'},
-          {message: 'Message 3', target: 'target 3', title: '3. Title 3'},
-        ],
-        seen: true,
-      },
-      Guide2: {
-        id: 2,
-        required_targets: ['target 1'],
-        steps: [
-          {message: 'Message 1', target: 'target 1', title: '1. Title 1'},
-          {message: 'Message 2', target: 'target 2', title: '2. Title 2'},
-        ],
         seen: false,
       },
+      issue_stream: {id: 3, seen: true},
     };
-    GuideStore.onRegisterAnchor(anchor1);
-    GuideStore.onRegisterAnchor(anchor2);
+    GuideStore.onRegisterAnchor(<GuideAnchor target="issue-title" />);
+    GuideStore.onRegisterAnchor(<GuideAnchor target="exception" />);
+    GuideStore.onRegisterAnchor(<GuideAnchor target="breadcrumbs" />);
+    GuideStore.onRegisterAnchor(<GuideAnchor target="issue_stream" />);
   });
 
   afterEach(function() {});
 
   it('should move through the steps in the guide', function() {
     GuideStore.onFetchSucceeded(data);
-    const guide = GuideStore.state.currentGuide;
     // Should pick the first non-seen guide in alphabetic order.
-    expect(guide.id).toEqual(2);
-    expect(guide.steps).toHaveLength(2);
+    expect(GuideStore.state.currentStep).toEqual(0);
+    expect(GuideStore.state.currentGuide.id).toEqual(data.issue_detail.id);
+    // Should prune steps that don't have anchors.
+    expect(GuideStore.state.currentGuide.steps).toHaveLength(3);
+
     GuideStore.onNextStep();
     expect(GuideStore.state.currentStep).toEqual(1);
+    GuideStore.onNextStep();
+    expect(GuideStore.state.currentStep).toEqual(2);
     GuideStore.onCloseGuide();
     expect(GuideStore.state.currentGuide).toEqual(null);
   });
 
-  it('should force show a guide', function() {
+  it('should force show a guide with #assistant', function() {
+    data = {
+      issue_detail: {
+        id: 1,
+        seen: true,
+      },
+      issue_stream: {id: 3, seen: false},
+    };
+
     GuideStore.onFetchSucceeded(data);
     window.location.hash = '#assistant';
     GuideStore.onURLChange();
-    expect(GuideStore.state.currentGuide.id).toEqual(1);
-    // Should prune steps that don't have anchors.
-    expect(GuideStore.state.currentGuide.steps).toHaveLength(2);
+    expect(GuideStore.state.currentGuide.id).toEqual(data.issue_detail.id);
     GuideStore.onCloseGuide();
-    expect(GuideStore.state.currentGuide.id).toEqual(2);
+    expect(GuideStore.state.currentGuide.id).toEqual(data.issue_stream.id);
     window.location.hash = '';
   });
 
   it('should record analytics events when guide is cued', function() {
     const spy = jest.spyOn(GuideStore, 'recordCue');
     GuideStore.onFetchSucceeded(data);
-    expect(spy).toHaveBeenCalledWith(data.Guide2.id);
+    expect(spy).toHaveBeenCalledWith(1);
     expect(spy).toHaveBeenCalledTimes(1);
     spy.mockRestore();
   });
@@ -77,7 +75,7 @@ describe('GuideStore', function() {
   it('should not send multiple cue analytics events for same guide', function() {
     const spy = jest.spyOn(GuideStore, 'recordCue');
     GuideStore.onFetchSucceeded(data);
-    expect(spy).toHaveBeenCalledWith(data.Guide2.id);
+    expect(spy).toHaveBeenCalledWith(1);
     expect(spy).toHaveBeenCalledTimes(1);
     GuideStore.updateCurrentGuide();
     expect(spy).toHaveBeenCalledTimes(1);
@@ -85,25 +83,15 @@ describe('GuideStore', function() {
   });
 
   describe('discover sidebar guide', function() {
-    const anchor3 = <GuideAnchor target="discover_sidebar" />;
-
     beforeEach(function() {
       data = {
         discover_sidebar: {
           id: 4,
-          required_targets: ['discover_sidebar'],
-          steps: [
-            {
-              title: 'Title 4',
-              message: 'Message 4',
-              target: 'discover_sidebar',
-            },
-          ],
           seen: false,
         },
       };
 
-      GuideStore.onRegisterAnchor(anchor3);
+      GuideStore.onRegisterAnchor(<GuideAnchor target="discover-sidebar" />);
     });
 
     it('does not render without user', function() {

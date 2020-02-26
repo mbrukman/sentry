@@ -1,8 +1,6 @@
 from __future__ import absolute_import
 
-from copy import deepcopy
-
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import serializers
@@ -37,12 +35,15 @@ class AssistantEndpoint(Endpoint):
 
     def get(self, request):
         """Return all the guides with a 'seen' attribute if it has been 'viewed' or 'dismissed'."""
-        guides = deepcopy(manager.all())
+        active_guides = manager.all()
         seen_ids = set(
             AssistantActivity.objects.filter(user=request.user).values_list("guide_id", flat=True)
         )
-        for k, v in guides.items():
-            v["seen"] = v["id"] in seen_ids
+
+        guides = {
+            guide.name.lower(): {"id": guide.value, "seen": guide.value in seen_ids}
+            for guide in active_guides
+        }
         return Response(guides)
 
     def put(self, request):
@@ -71,8 +72,7 @@ class AssistantEndpoint(Endpoint):
             fields["dismissed_ts"] = timezone.now()
 
         try:
-            with transaction.atomic():
-                AssistantActivity.objects.create(user=request.user, guide_id=guide_id, **fields)
+            AssistantActivity.objects.create(user=request.user, guide_id=guide_id, **fields)
         except IntegrityError:
             pass
 

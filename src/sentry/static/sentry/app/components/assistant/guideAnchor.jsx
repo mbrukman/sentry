@@ -60,22 +60,12 @@ const GuideAnchor = createReactClass({
     const active =
       data.currentGuide &&
       data.currentGuide.steps[data.currentStep].target === this.props.target;
+
     this.setState({
       active,
       guide: data.currentGuide,
       step: data.currentStep,
       org: data.org,
-      messageVariables: {
-        orgSlug: data.org && data.org.slug,
-        projectSlug: data.project && data.project.slug,
-      },
-    });
-  },
-
-  interpolate(template, variables) {
-    const regex = /\${([^{]+)}/g;
-    return template.replace(regex, (_match, g1) => {
-      return variables[g1.trim()];
     });
   },
 
@@ -103,7 +93,7 @@ const GuideAnchor = createReactClass({
   },
 
   render() {
-    const {active, guide, step, messageVariables} = this.state;
+    const {active, guide, step} = this.state;
     if (!active) {
       return this.props.children ? this.props.children : null;
     }
@@ -119,16 +109,12 @@ const GuideAnchor = createReactClass({
           )}
         </GuideInputRow>
         <StyledContent>
-          <div
-            dangerouslySetInnerHTML={{
-              __html: this.interpolate(guide.steps[step].message, messageVariables),
-            }}
-          />
+          <div>{guide.steps[step].description}</div>
           <Actions>
             <div>
               {step < guide.steps.length - 1 ? (
                 <Button priority="success" size="small" onClick={this.handleNextStep}>
-                  {t('Next')} &rarr;
+                  {t('Next')}
                 </Button>
               ) : (
                 <Button priority="success" size="small" onClick={this.handleFinish}>

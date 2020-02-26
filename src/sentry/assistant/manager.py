@@ -1,17 +1,18 @@
 from __future__ import absolute_import
-import six
+
+from enum import Enum
 
 
 class AssistantManager(object):
     def __init__(self):
-        self._guides = {}
+        self._guides = []
 
-    def add(self, guides):
-        for k, v in six.iteritems(guides):
-            self._guides[k] = v
+    def add(self, guide):
+        if isinstance(guide, Enum):
+            self._guides.append(guide)
 
     def get_valid_ids(self):
-        return list(v["id"] for k, v in six.iteritems(self._guides))
+        return [guide.value for guide in self._guides]
 
     def all(self):
         return self._guides
