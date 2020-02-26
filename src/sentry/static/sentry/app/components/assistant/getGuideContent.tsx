@@ -81,11 +81,11 @@ export default function getGuideContent() {
       ],
     },
     issue_stream: {
-      required_targets: ['issue_stream'],
+      required_targets: ['issue-stream'],
       steps: [
         {
           title: t('Issues'),
-          target: 'issue_stream',
+          target: 'issue-stream',
           description: tct(
             `Sentry automatically groups similar events together into an issue. Similarity is
             determined by stacktrace and other factors. [link:Learn more]`,

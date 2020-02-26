@@ -25,7 +25,7 @@ describe('GuideStore', function() {
     GuideStore.onRegisterAnchor(<GuideAnchor target="issue-title" />);
     GuideStore.onRegisterAnchor(<GuideAnchor target="exception" />);
     GuideStore.onRegisterAnchor(<GuideAnchor target="breadcrumbs" />);
-    GuideStore.onRegisterAnchor(<GuideAnchor target="issue_stream" />);
+    GuideStore.onRegisterAnchor(<GuideAnchor target="issue-stream" />);
   });
 
   afterEach(function() {});
