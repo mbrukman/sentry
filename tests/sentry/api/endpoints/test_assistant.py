@@ -29,19 +29,19 @@ class AssistantActivityTest(APITestCase):
 
     def test_dismissed(self):
         AssistantActivity.objects.create(
-            user=self.user, guide_id=AssistantGuide.ISSUE_DETAIL.value, dismissed_ts=timezone.now()
+            user=self.user, guide_id=AssistantGuide.ISSUE_DETAILS.value, dismissed_ts=timezone.now()
         )
         resp = self.get_response()
         assert resp.status_code == 200
-        assert resp.data[AssistantGuide.ISSUE_DETAIL.name.lower()]["seen"] is True
+        assert resp.data[AssistantGuide.ISSUE_DETAILS.name.lower()]["seen"] is True
 
     def test_viewed(self):
         AssistantActivity.objects.create(
-            user=self.user, guide_id=AssistantGuide.ISSUE_DETAIL.value, viewed_ts=timezone.now()
+            user=self.user, guide_id=AssistantGuide.ISSUE_DETAILS.value, viewed_ts=timezone.now()
         )
         resp = self.get_response()
         assert resp.status_code == 200
-        assert resp.data[AssistantGuide.ISSUE_DETAIL.name.lower()]["seen"] is True
+        assert resp.data[AssistantGuide.ISSUE_DETAILS.name.lower()]["seen"] is True
 
 
 class AssistantActivityUpdateTest(APITestCase):
@@ -58,7 +58,7 @@ class AssistantActivityUpdateTest(APITestCase):
         assert resp.status_code == 400
 
         resp = self.get_response(
-            guide_id=AssistantGuide.ISSUE_DETAIL.value, status="whats_my_name_again"
+            guide_id=AssistantGuide.ISSUE_DETAILS.value, status="whats_my_name_again"
         )
         assert resp.status_code == 400
 

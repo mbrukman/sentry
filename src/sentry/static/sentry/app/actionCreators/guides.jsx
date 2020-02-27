@@ -29,12 +29,12 @@ export function closeGuide() {
   GuideActions.closeGuide();
 }
 
-export function dismissGuide(guideId, step, org) {
-  recordDismiss(guideId, step, org);
+export function dismissGuide(guideId, step, orgId) {
+  recordDismiss(guideId, step, orgId);
   closeGuide();
 }
 
-export function recordFinish(guideId, org) {
+export function recordFinish(guideId, orgId) {
   api.request('/assistant/', {
     method: 'PUT',
     data: {
@@ -46,14 +46,12 @@ export function recordFinish(guideId, org) {
     eventKey: 'assistant.guide_finished',
     eventName: 'Assistant Guide Finished',
     guide: guideId,
+    organization_id: orgId,
   };
-  if (org) {
-    data.organization_id = org.id;
-  }
   trackAnalyticsEvent(data);
 }
 
-export function recordDismiss(guideId, step, org) {
+export function recordDismiss(guideId, step, orgId) {
   api.request('/assistant/', {
     method: 'PUT',
     data: {
@@ -66,9 +64,7 @@ export function recordDismiss(guideId, step, org) {
     eventName: 'Assistant Guide Dismissed',
     guide: guideId,
     step,
+    organization_id: orgId,
   };
-  if (org) {
-    data.organization_id = org.id;
-  }
   trackAnalyticsEvent(data);
 }

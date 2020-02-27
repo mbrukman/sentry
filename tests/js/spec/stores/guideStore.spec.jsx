@@ -1,6 +1,4 @@
-import React from 'react';
 import GuideStore from 'app/stores/guideStore';
-import GuideAnchor from 'app/components/assistant/guideAnchor';
 import ConfigStore from 'app/stores/configStore';
 
 describe('GuideStore', function() {
@@ -16,16 +14,16 @@ describe('GuideStore', function() {
 
     GuideStore.init();
     data = {
-      issue_detail: {
+      issue_details: {
         id: 1,
         seen: false,
       },
       issue_stream: {id: 3, seen: true},
     };
-    GuideStore.onRegisterAnchor(<GuideAnchor target="issue-title" />);
-    GuideStore.onRegisterAnchor(<GuideAnchor target="exception" />);
-    GuideStore.onRegisterAnchor(<GuideAnchor target="breadcrumbs" />);
-    GuideStore.onRegisterAnchor(<GuideAnchor target="issue-stream" />);
+    GuideStore.onRegisterAnchor('issue-title');
+    GuideStore.onRegisterAnchor('exception');
+    GuideStore.onRegisterAnchor('breadcrumbs');
+    GuideStore.onRegisterAnchor('issue-stream');
   });
 
   afterEach(function() {});
@@ -34,7 +32,7 @@ describe('GuideStore', function() {
     GuideStore.onFetchSucceeded(data);
     // Should pick the first non-seen guide in alphabetic order.
     expect(GuideStore.state.currentStep).toEqual(0);
-    expect(GuideStore.state.currentGuide.id).toEqual(data.issue_detail.id);
+    expect(GuideStore.state.currentGuide.id).toEqual(data.issue_details.id);
     // Should prune steps that don't have anchors.
     expect(GuideStore.state.currentGuide.steps).toHaveLength(3);
 
@@ -48,7 +46,7 @@ describe('GuideStore', function() {
 
   it('should force show a guide with #assistant', function() {
     data = {
-      issue_detail: {
+      issue_details: {
         id: 1,
         seen: true,
       },
@@ -58,7 +56,7 @@ describe('GuideStore', function() {
     GuideStore.onFetchSucceeded(data);
     window.location.hash = '#assistant';
     GuideStore.onURLChange();
-    expect(GuideStore.state.currentGuide.id).toEqual(data.issue_detail.id);
+    expect(GuideStore.state.currentGuide.id).toEqual(data.issue_details.id);
     GuideStore.onCloseGuide();
     expect(GuideStore.state.currentGuide.id).toEqual(data.issue_stream.id);
     window.location.hash = '';
@@ -91,7 +89,7 @@ describe('GuideStore', function() {
         },
       };
 
-      GuideStore.onRegisterAnchor(<GuideAnchor target="discover-sidebar" />);
+      GuideStore.onRegisterAnchor('discover-sidebar');
     });
 
     it('does not render without user', function() {

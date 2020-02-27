@@ -4,6 +4,7 @@ import React from 'react';
 import styled from '@emotion/styled';
 import createReactClass from 'create-react-class';
 import Reflux from 'reflux';
+
 import theme from 'app/utils/theme';
 import {
   registerAnchor,
@@ -20,10 +21,12 @@ import space from 'app/styles/space';
 import {t} from 'app/locale';
 import {CloseIcon} from 'app/components/assistant/styles';
 
-// A GuideAnchor puts an informative hovercard around an element.
-// Guide anchors register with the GuideStore, which uses registrations
-// from one or more anchors on the page to determine which guides can
-// be shown on the page.
+/**
+ * A GuideAnchor puts an informative hovercard around an element.
+ * Guide anchors register with the GuideStore, which uses registrations
+ * from one or more anchors on the page to determine which guides can
+ * be shown on the page.
+ */
 const GuideAnchor = createReactClass({
   propTypes: {
     target: PropTypes.string.isRequired,
@@ -35,16 +38,18 @@ const GuideAnchor = createReactClass({
   getInitialState() {
     return {
       active: false,
+      orgId: null,
     };
   },
 
   componentDidMount() {
-    registerAnchor(this);
+    const {target} = this.props;
+    target && registerAnchor(target);
   },
 
   componentDidUpdate(_prevProps, prevState) {
     if (this.containerElement && !prevState.active && this.state.active) {
-      const {_left, top} = this.containerElement.getBoundingClientRect();
+      const {top} = this.containerElement.getBoundingClientRect();
       const scrollTop = window.pageYOffset;
       const centerElement = top + scrollTop - window.innerHeight / 2;
       window.scrollTo({top: centerElement});
@@ -52,7 +57,8 @@ const GuideAnchor = createReactClass({
   },
 
   componentWillUnmount() {
-    unregisterAnchor(this);
+    const {target} = this.props;
+    target && unregisterAnchor(target);
   },
 
   onGuideStateChange(data) {
@@ -64,19 +70,21 @@ const GuideAnchor = createReactClass({
       active,
       guide: data.currentGuide,
       step: data.currentStep,
-      org: data.org,
+      orgId: data.orgId,
     });
   },
 
-  /* Terminology:
-   - A guide can be FINISHED by clicking one of the buttons in the last step.
-   - A guide can be DISMISSED by x-ing out of it at any step except the last (where there is no x).
-   - In both cases we consider it CLOSED.
-  */
+  /**
+   * Terminology:
+   *
+   *  - A guide can be FINISHED by clicking one of the buttons in the last step
+   *  - A guide can be DISMISSED by x-ing out of it at any step except the last (where there is no x)
+   *  - In both cases we consider it CLOSED
+   */
   handleFinish(e) {
     e.stopPropagation();
-    const {guide, org} = this.state;
-    recordFinish(guide.id, org);
+    const {guide, orgId} = this.state;
+    recordFinish(guide.id, orgId);
     closeGuide();
   },
 
@@ -87,8 +95,8 @@ const GuideAnchor = createReactClass({
 
   handleDismiss(e) {
     e.stopPropagation();
-    const {guide, step, org} = this.state;
-    dismissGuide(guide.id, step, org);
+    const {guide, step, orgId} = this.state;
+    dismissGuide(guide.id, step, orgId);
   },
 
   render() {

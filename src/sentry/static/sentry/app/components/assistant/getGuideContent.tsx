@@ -5,7 +5,7 @@ import ExternalLink from 'app/components/links/externalLink';
 
 export default function getGuideContent() {
   return {
-    issue_detail: {
+    issue_details: {
       required_targets: ['issue-title', 'exception'],
       steps: [
         {

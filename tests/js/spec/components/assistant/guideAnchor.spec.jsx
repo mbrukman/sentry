@@ -7,7 +7,7 @@ import ConfigStore from 'app/stores/configStore';
 describe('GuideAnchor', function() {
   let wrapper1, wrapper2;
   const data = {
-    issue_detail: {
+    issue_details: {
       id: 1,
       seen: false,
     },
