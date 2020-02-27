@@ -14,12 +14,28 @@ import {
   recordFinish,
   dismissGuide,
 } from 'app/actionCreators/guides';
+import {CloseIcon} from 'app/components/assistant/styles';
+import {Guide} from 'app/components/assistant/types';
+import {t} from 'app/locale';
 import GuideStore from 'app/stores/guideStore';
 import Hovercard from 'app/components/hovercard';
 import Button from 'app/components/button';
 import space from 'app/styles/space';
-import {t} from 'app/locale';
-import {CloseIcon} from 'app/components/assistant/styles';
+
+type Props = {
+  target: string;
+  position?: string;
+};
+
+type InitialState = {
+  active: boolean;
+  orgId: string | null;
+};
+
+type State = InitialState & {
+  guide?: Guide;
+  step?: number;
+};
 
 /**
  * A GuideAnchor puts an informative hovercard around an element.
@@ -27,15 +43,15 @@ import {CloseIcon} from 'app/components/assistant/styles';
  * from one or more anchors on the page to determine which guides can
  * be shown on the page.
  */
-const GuideAnchor = createReactClass({
+const GuideAnchor = createReactClass<Props, State>({
   propTypes: {
     target: PropTypes.string.isRequired,
     position: PropTypes.string,
   },
 
-  mixins: [Reflux.listenTo(GuideStore, 'onGuideStateChange')],
+  mixins: [Reflux.listenTo(GuideStore, 'onGuideStateChange') as any],
 
-  getInitialState() {
+  getInitialState(): InitialState {
     return {
       active: false,
       orgId: null,

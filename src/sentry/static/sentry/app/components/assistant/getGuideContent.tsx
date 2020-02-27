@@ -1,9 +1,27 @@
 import React from 'react';
 
 import {t, tct} from 'app/locale';
+import {GuideContent} from 'app/components/assistant/types';
 import ExternalLink from 'app/components/links/externalLink';
 
-export default function getGuideContent() {
+/**
+ * Guide Schema
+ *
+ * required_targets: An empty list will cause the guide to be shown regardless
+ *                   of page/targets presence.
+ * steps: Steps of the guide.
+ *
+ * Step Schema
+ *
+ * title: Title text.
+ * description: Description text. Should help illustrate how to do a task.
+ * target: Step is tied to an anchor target. If the anchor doesn't exist,
+ *         the step will not be shown. If the anchor exists but is of type
+ *         "invisible", it will not be pinged but will be scrolled to.
+ *         Otherwise the anchor will be pinged and scrolled to.
+ *
+ */
+export default function getGuideContent(): GuideContent {
   return {
     issue_details: {
       required_targets: ['issue-title', 'exception'],
@@ -63,7 +81,7 @@ export default function getGuideContent() {
           target: 'issue-number',
           description: tct(
             `Include this unique identifier in your commit message to have Sentry automatically
-            resolve the issue when your code is deployed. [link:Learn more]`,
+            resolve the issue when your code is deployed. [link:Learn more].`,
             {link: <ExternalLink href="https://docs.sentry.io/learn/releases/" />}
           ),
         },
@@ -88,7 +106,7 @@ export default function getGuideContent() {
           target: 'issue-stream',
           description: tct(
             `Sentry automatically groups similar events together into an issue. Similarity is
-            determined by stacktrace and other factors. [link:Learn more]`,
+            determined by stacktrace and other factors. [link:Learn more].`,
             {
               link: (
                 <ExternalLink href="https://docs.sentry.io/data-management/rollups/" />

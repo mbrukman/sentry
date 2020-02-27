@@ -1,6 +1,7 @@
 import {Client} from 'app/api';
 import GuideActions from 'app/actions/guideActions';
 import {trackAnalyticsEvent} from 'app/utils/analytics';
+import {Guide} from 'app/components/assistant/types';
 
 const api = new Client();
 
@@ -13,12 +14,12 @@ export function fetchGuides() {
   });
 }
 
-export function registerAnchor(anchor) {
-  GuideActions.registerAnchor(anchor);
+export function registerAnchor(target: string) {
+  GuideActions.registerAnchor(target);
 }
 
-export function unregisterAnchor(anchor) {
-  GuideActions.unregisterAnchor(anchor);
+export function unregisterAnchor(target: string) {
+  GuideActions.unregisterAnchor(target);
 }
 
 export function nextStep() {
@@ -29,12 +30,12 @@ export function closeGuide() {
   GuideActions.closeGuide();
 }
 
-export function dismissGuide(guideId, step, orgId) {
+export function dismissGuide(guideId: Guide['id'], step: number, orgId: string | null) {
   recordDismiss(guideId, step, orgId);
   closeGuide();
 }
 
-export function recordFinish(guideId, orgId) {
+export function recordFinish(guideId: Guide['id'], orgId: string | null) {
   api.request('/assistant/', {
     method: 'PUT',
     data: {
@@ -51,7 +52,7 @@ export function recordFinish(guideId, orgId) {
   trackAnalyticsEvent(data);
 }
 
-export function recordDismiss(guideId, step, orgId) {
+export function recordDismiss(guideId: Guide['id'], step: number, orgId: string | null) {
   api.request('/assistant/', {
     method: 'PUT',
     data: {

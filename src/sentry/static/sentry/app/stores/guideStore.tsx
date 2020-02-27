@@ -3,11 +3,23 @@ import Reflux from 'reflux';
 import * as Sentry from '@sentry/browser';
 
 import {Client} from 'app/api';
+import {Guide, Guides, GuideStep, GuideData} from 'app/components/assistant/types';
+import {LightWeightOrganization} from 'app/types';
 import {trackAnalyticsEvent} from 'app/utils/analytics';
 import ConfigStore from 'app/stores/configStore';
 import getGuideContent from 'app/components/assistant/getGuideContent';
 import GuideActions from 'app/actions/guideActions';
 import OrganizationsActions from 'app/actions/organizationsActions';
+
+type State = {
+  guides: Guides;
+  anchors: Set<string>;
+  currentGuide: Guide | null;
+  currentStep: number;
+  orgId: string | null;
+  forceShow: boolean;
+  prevGuide: Guide | null;
+};
 
 const GuideStore = Reflux.createStore({
   init() {
@@ -40,7 +52,7 @@ const GuideStore = Reflux.createStore({
        * The previously shown guide
        */
       prevGuide: null,
-    };
+    } as State;
 
     this.api = new Client();
     this.listenTo(GuideActions.fetchSucceeded, this.onFetchSucceeded);
@@ -59,12 +71,12 @@ const GuideStore = Reflux.createStore({
     this.updateCurrentGuide();
   },
 
-  onSetActiveOrganization(data) {
+  onSetActiveOrganization(data: LightWeightOrganization) {
     this.state.orgId = data ? data.id : null;
     this.updateCurrentGuide();
   },
 
-  onFetchSucceeded(data) {
+  onFetchSucceeded(data: GuideData) {
     // It's possible we can get empty responses (seems to be Firefox specific)
     // Do nothing if `data` is empty
     if (!data) {
@@ -85,17 +97,17 @@ const GuideStore = Reflux.createStore({
     this.trigger(this.state);
   },
 
-  onRegisterAnchor(target) {
+  onRegisterAnchor(target: string) {
     this.state.anchors.add(target);
     this.updateCurrentGuide();
   },
 
-  onUnregisterAnchor(target) {
+  onUnregisterAnchor(target: string) {
     this.state.anchors.delete(target);
     this.updateCurrentGuide();
   },
 
-  recordCue(id) {
+  recordCue(id: number) {
     const data = {
       eventKey: 'assistant.guide_cued',
       eventName: 'Assistant Guide Cued',
@@ -105,7 +117,7 @@ const GuideStore = Reflux.createStore({
     trackAnalyticsEvent(data);
   },
 
-  updateGuidesWithContent(data) {
+  updateGuidesWithContent(data: GuideData) {
     try {
       const content = getGuideContent();
       const guides = Object.keys(data).reduce((acc, key) => {
@@ -122,7 +134,7 @@ const GuideStore = Reflux.createStore({
     }
   },
 
-  updatePrevGuide(bestGuide) {
+  updatePrevGuide(bestGuide: Guide) {
     const {prevGuide} = this.state;
     if (!bestGuide) {
       return;
@@ -147,7 +159,9 @@ const GuideStore = Reflux.createStore({
 
     let availableGuides = Object.keys(guides)
       .sort()
-      .filter(key => guides[key].required_targets.every(target => anchors.has(target)));
+      .filter(key =>
+        guides[key].required_targets.every((target: string) => anchors.has(target))
+      );
 
     if (!forceShow) {
       const user = ConfigStore.get('user');
@@ -175,7 +189,9 @@ const GuideStore = Reflux.createStore({
       bestGuide = {
         key,
         ...guides[key],
-        steps: guides[key].steps.filter(step => step.target && anchors.has(step.target)),
+        steps: guides[key].steps.filter(
+          (step: GuideStep) => step.target && anchors.has(step.target)
+        ),
       };
     }
 
