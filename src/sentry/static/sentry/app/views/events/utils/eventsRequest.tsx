@@ -16,7 +16,7 @@ import SentryTypes from 'app/sentryTypes';
 
 import LoadingPanel from '../loadingPanel';
 
-type TimeSeriesData = {
+export type TimeSeriesData = {
   // timeseries data
   timeseriesData?: Series[];
   allTimeseriesData?: EventsStatsData;
