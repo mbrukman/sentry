@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-import six
-
 from django.utils import timezone
 
 from sentry.assistant import manager
@@ -22,10 +20,9 @@ class AssistantActivityTest(APITestCase):
         resp = self.get_response()
         assert resp.status_code == 200
 
-        data = resp.data
-        assert len(data) == len(manager.all())
-        for key, value in six.iteritems(data):
-            assert value["seen"] is False
+        assert len(resp.data) == len(manager.all())
+        for guide in resp.data:
+            assert guide["seen"] is False
 
     def test_dismissed(self):
         AssistantActivity.objects.create(
@@ -33,7 +30,7 @@ class AssistantActivityTest(APITestCase):
         )
         resp = self.get_response()
         assert resp.status_code == 200
-        assert resp.data[AssistantGuide.ISSUE_DETAILS.name.lower()]["seen"] is True
+        assert {"guide": "issue_details", "seen": True} in resp.data
 
     def test_viewed(self):
         AssistantActivity.objects.create(
@@ -41,7 +38,7 @@ class AssistantActivityTest(APITestCase):
         )
         resp = self.get_response()
         assert resp.status_code == 200
-        assert resp.data[AssistantGuide.ISSUE_DETAILS.name.lower()]["seen"] is True
+        assert {"guide": "issue_details", "seen": True} in resp.data
 
 
 class AssistantActivityUpdateTest(APITestCase):
@@ -54,16 +51,14 @@ class AssistantActivityUpdateTest(APITestCase):
         self.login_as(user=self.user)
 
     def test_invalid_inputs(self):
-        resp = self.get_response(guide_id=1938)
+        resp = self.get_response(guide="guide_does_not_exist")
         assert resp.status_code == 400
 
-        resp = self.get_response(
-            guide_id=AssistantGuide.ISSUE_DETAILS.value, status="whats_my_name_again"
-        )
+        resp = self.get_response(guide_id="issue_details", status="whats_my_name_again")
         assert resp.status_code == 400
 
     def test_dismissed(self):
-        resp = self.get_response(guide_id=AssistantGuide.ISSUE_STREAM.value, status="dismissed")
+        resp = self.get_response(guide="issue_stream", status="dismissed")
         assert resp.status_code == 201
 
         activity = AssistantActivity.objects.get(
@@ -73,7 +68,7 @@ class AssistantActivityUpdateTest(APITestCase):
         assert not activity.viewed_ts
 
     def test_viewed(self):
-        resp = self.get_response(guide_id=AssistantGuide.ISSUE_STREAM.value, status="viewed")
+        resp = self.get_response(guide="issue_stream", status="viewed")
         assert resp.status_code == 201
 
         activity = AssistantActivity.objects.get(

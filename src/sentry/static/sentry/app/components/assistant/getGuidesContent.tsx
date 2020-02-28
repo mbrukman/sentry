@@ -1,30 +1,14 @@
 import React from 'react';
 
 import {t, tct} from 'app/locale';
-import {GuideContent} from 'app/components/assistant/types';
+import {GuidesContent} from 'app/components/assistant/types';
 import ExternalLink from 'app/components/links/externalLink';
 
-/**
- * Guide Schema
- *
- * required_targets: An empty list will cause the guide to be shown regardless
- *                   of page/targets presence.
- * steps: Steps of the guide.
- *
- * Step Schema
- *
- * title: Title text.
- * description: Description text. Should help illustrate how to do a task.
- * target: Step is tied to an anchor target. If the anchor doesn't exist,
- *         the step will not be shown. If the anchor exists but is of type
- *         "invisible", it will not be pinged but will be scrolled to.
- *         Otherwise the anchor will be pinged and scrolled to.
- *
- */
-export default function getGuideContent(): GuideContent {
-  return {
-    issue_details: {
-      required_targets: ['issue-title', 'exception'],
+export default function getGuidesContent(): GuidesContent {
+  return [
+    {
+      guide: 'issue_details',
+      requiredTargets: ['issue-title', 'exception'],
       steps: [
         {
           title: t('Issue Details'),
@@ -98,8 +82,9 @@ export default function getGuideContent(): GuideContent {
         },
       ],
     },
-    issue_stream: {
-      required_targets: ['issue-stream'],
+    {
+      guide: 'issue_stream',
+      requiredTargets: ['issue-stream'],
       steps: [
         {
           title: t('Issues'),
@@ -116,8 +101,9 @@ export default function getGuideContent(): GuideContent {
         },
       ],
     },
-    discover_sidebar: {
-      required_targets: ['discover-sidebar'],
+    {
+      guide: 'discover_sidebar',
+      requiredTargets: ['discover-sidebar'],
       steps: [
         {
           title: t('Event Pages have moved'),
@@ -132,5 +118,5 @@ export default function getGuideContent(): GuideContent {
         },
       ],
     },
-  };
+  ];
 }

@@ -13,13 +13,13 @@ describe('GuideStore', function() {
     };
 
     GuideStore.init();
-    data = {
-      issue_details: {
-        id: 1,
+    data = [
+      {
+        guide: 'issue_details',
         seen: false,
       },
-      issue_stream: {id: 3, seen: true},
-    };
+      {guide: 'issue_stream', seen: true},
+    ];
     GuideStore.onRegisterAnchor('issue-title');
     GuideStore.onRegisterAnchor('exception');
     GuideStore.onRegisterAnchor('breadcrumbs');
@@ -32,7 +32,7 @@ describe('GuideStore', function() {
     GuideStore.onFetchSucceeded(data);
     // Should pick the first non-seen guide in alphabetic order.
     expect(GuideStore.state.currentStep).toEqual(0);
-    expect(GuideStore.state.currentGuide.id).toEqual(data.issue_details.id);
+    expect(GuideStore.state.currentGuide.guide).toEqual('issue_details');
     // Should prune steps that don't have anchors.
     expect(GuideStore.state.currentGuide.steps).toHaveLength(3);
 
@@ -45,27 +45,27 @@ describe('GuideStore', function() {
   });
 
   it('should force show a guide with #assistant', function() {
-    data = {
-      issue_details: {
-        id: 1,
+    data = [
+      {
+        guide: 'issue_details',
         seen: true,
       },
-      issue_stream: {id: 3, seen: false},
-    };
+      {guide: 'issue_stream', seen: false},
+    ];
 
     GuideStore.onFetchSucceeded(data);
     window.location.hash = '#assistant';
     GuideStore.onURLChange();
-    expect(GuideStore.state.currentGuide.id).toEqual(data.issue_details.id);
+    expect(GuideStore.state.currentGuide.guide).toEqual('issue_details');
     GuideStore.onCloseGuide();
-    expect(GuideStore.state.currentGuide.id).toEqual(data.issue_stream.id);
+    expect(GuideStore.state.currentGuide.guide).toEqual('issue_stream');
     window.location.hash = '';
   });
 
   it('should record analytics events when guide is cued', function() {
     const spy = jest.spyOn(GuideStore, 'recordCue');
     GuideStore.onFetchSucceeded(data);
-    expect(spy).toHaveBeenCalledWith(1);
+    expect(spy).toHaveBeenCalledWith('issue_details');
     expect(spy).toHaveBeenCalledTimes(1);
     spy.mockRestore();
   });
@@ -73,7 +73,7 @@ describe('GuideStore', function() {
   it('should not send multiple cue analytics events for same guide', function() {
     const spy = jest.spyOn(GuideStore, 'recordCue');
     GuideStore.onFetchSucceeded(data);
-    expect(spy).toHaveBeenCalledWith(1);
+    expect(spy).toHaveBeenCalledWith('issue_details');
     expect(spy).toHaveBeenCalledTimes(1);
     GuideStore.updateCurrentGuide();
     expect(spy).toHaveBeenCalledTimes(1);
@@ -82,12 +82,12 @@ describe('GuideStore', function() {
 
   describe('discover sidebar guide', function() {
     beforeEach(function() {
-      data = {
-        discover_sidebar: {
-          id: 4,
+      data = [
+        {
+          guide: 'discover_sidebar',
           seen: false,
         },
-      };
+      ];
 
       GuideStore.onRegisterAnchor('discover-sidebar');
     });
@@ -105,7 +105,7 @@ describe('GuideStore', function() {
         },
       };
       GuideStore.onFetchSucceeded(data);
-      expect(GuideStore.state.currentGuide.id).toBe(data.discover_sidebar.id);
+      expect(GuideStore.state.currentGuide.guide).toBe('discover_sidebar');
     });
 
     it('shows discover sidebar guide to previously existing users', function() {
@@ -116,7 +116,7 @@ describe('GuideStore', function() {
         },
       };
       GuideStore.onFetchSucceeded(data);
-      expect(GuideStore.state.currentGuide.id).toBe(data.discover_sidebar.id);
+      expect(GuideStore.state.currentGuide.guide).toBe('discover_sidebar');
     });
 
     it('does not show discover sidebar guide to new users', function() {
@@ -131,7 +131,7 @@ describe('GuideStore', function() {
     });
 
     it('hides discover sidebar guide once seen', function() {
-      data.discover_sidebar.seen = true;
+      data[0].seen = true;
       // previous user
       ConfigStore.config = {
         user: {

@@ -11,8 +11,10 @@ class AssistantManager(object):
         if isinstance(guide, Enum):
             self._guides.append(guide)
 
-    def get_valid_ids(self):
-        return [guide.value for guide in self._guides]
+    def get_id_by_name(self, name):
+        for guide in self._guides:
+            if name == guide.name.lower():
+                return guide.value
 
     def all(self):
         return self._guides

@@ -6,12 +6,12 @@ import ConfigStore from 'app/stores/configStore';
 
 describe('GuideAnchor', function() {
   let wrapper1, wrapper2;
-  const data = {
-    issue_details: {
-      id: 1,
+  const serverGuide = [
+    {
+      guide: 'issue_details',
       seen: false,
     },
-  };
+  ];
 
   const routerContext = TestStubs.routerContext();
 
@@ -33,7 +33,7 @@ describe('GuideAnchor', function() {
   });
 
   it('renders, advances, and finishes', async function() {
-    GuideActions.fetchSucceeded(data);
+    GuideActions.fetchSucceeded(serverGuide);
     await tick();
     wrapper1.update();
 
@@ -72,7 +72,7 @@ describe('GuideAnchor', function() {
       expect.objectContaining({
         method: 'PUT',
         data: {
-          guide_id: 1,
+          guide: 'issue_details',
           status: 'viewed',
         },
       })
@@ -80,7 +80,7 @@ describe('GuideAnchor', function() {
   });
 
   it('dismisses', async function() {
-    GuideActions.fetchSucceeded(data);
+    GuideActions.fetchSucceeded(serverGuide);
     await tick();
     wrapper1.update();
 
@@ -99,7 +99,7 @@ describe('GuideAnchor', function() {
       expect.objectContaining({
         method: 'PUT',
         data: {
-          guide_id: 1,
+          guide: 'issue_details',
           status: 'dismissed',
         },
       })

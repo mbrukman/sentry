@@ -16,18 +16,21 @@ VALID_STATUSES = frozenset(("viewed", "dismissed"))
 
 
 class AssistantSerializer(serializers.Serializer):
-    guide_id = serializers.IntegerField(required=True)
+    guide = serializers.CharField(required=True)
     status = serializers.ChoiceField(choices=zip(VALID_STATUSES, VALID_STATUSES), required=True)
     useful = serializers.BooleanField()
 
-    def validate_guide_id(self, value):
-        valid_ids = manager.get_valid_ids()
+    def validate(self, attrs):
+        guide = attrs.get("guide")
+        if not guide:
+            raise serializers.ValidationError("Assistant guide is required")
 
-        if not value:
-            raise serializers.ValidationError("Assistant guide id is required")
-        if value not in valid_ids:
-            raise serializers.ValidationError("Not a valid assistant guide id")
-        return value
+        guide_id = manager.get_id_by_name(guide)
+        if not guide_id:
+            raise serializers.ValidationError("Not a valid assistant guide")
+
+        attrs["guide_id"] = guide_id
+        return attrs
 
 
 class AssistantEndpoint(Endpoint):
@@ -40,17 +43,17 @@ class AssistantEndpoint(Endpoint):
             AssistantActivity.objects.filter(user=request.user).values_list("guide_id", flat=True)
         )
 
-        guides = {
-            guide.name.lower(): {"id": guide.value, "seen": guide.value in seen_ids}
+        guides = [
+            {"guide": guide.name.lower(), "seen": guide.value in seen_ids}
             for guide in active_guides
-        }
+        ]
         return Response(guides)
 
     def put(self, request):
         """Mark a guide as viewed or dismissed.
 
         Request is of the form {
-            'guide_id': <guide_id>,
+            'guide': guide key (e.g. 'issue_details'),
             'status': 'viewed' / 'dismissed',
             'useful' (optional): true / false,
         }
@@ -59,9 +62,11 @@ class AssistantEndpoint(Endpoint):
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
 
-        guide_id = request.data["guide_id"]
-        status = request.data["status"]
-        useful = request.data.get("useful")
+        data = serializer.validated_data
+
+        guide_id = data["guide_id"]
+        status = data["status"]
+        useful = data.get("useful")
 
         fields = {}
         if useful is not None:

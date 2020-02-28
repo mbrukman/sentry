@@ -4,6 +4,7 @@ import React from 'react';
 import styled from '@emotion/styled';
 import createReactClass from 'create-react-class';
 import Reflux from 'reflux';
+import * as Sentry from '@sentry/browser';
 
 import theme from 'app/utils/theme';
 import {
@@ -33,7 +34,7 @@ type InitialState = {
 };
 
 type State = InitialState & {
-  guide?: Guide;
+  currentGuide?: Guide;
   step?: number;
 };
 
@@ -65,10 +66,14 @@ const GuideAnchor = createReactClass<Props, State>({
 
   componentDidUpdate(_prevProps, prevState) {
     if (this.containerElement && !prevState.active && this.state.active) {
-      const {top} = this.containerElement.getBoundingClientRect();
-      const scrollTop = window.pageYOffset;
-      const centerElement = top + scrollTop - window.innerHeight / 2;
-      window.scrollTo({top: centerElement});
+      try {
+        const {top} = this.containerElement.getBoundingClientRect();
+        const scrollTop = window.pageYOffset;
+        const centerElement = top + scrollTop - window.innerHeight / 2;
+        window.scrollTo({top: centerElement});
+      } catch (err) {
+        Sentry.captureException(err);
+      }
     }
   },
 
@@ -84,7 +89,7 @@ const GuideAnchor = createReactClass<Props, State>({
 
     this.setState({
       active,
-      guide: data.currentGuide,
+      currentGuide: data.currentGuide,
       step: data.currentStep,
       orgId: data.orgId,
     });
@@ -99,8 +104,8 @@ const GuideAnchor = createReactClass<Props, State>({
    */
   handleFinish(e) {
     e.stopPropagation();
-    const {guide, orgId} = this.state;
-    recordFinish(guide.id, orgId);
+    const {currentGuide, orgId} = this.state;
+    recordFinish(currentGuide.guide, orgId);
     closeGuide();
   },
 
@@ -111,12 +116,12 @@ const GuideAnchor = createReactClass<Props, State>({
 
   handleDismiss(e) {
     e.stopPropagation();
-    const {guide, step, orgId} = this.state;
-    dismissGuide(guide.id, step, orgId);
+    const {currentGuide, step, orgId} = this.state;
+    dismissGuide(currentGuide.guide, step, orgId);
   },
 
   render() {
-    const {active, guide, step} = this.state;
+    const {active, currentGuide, step} = this.state;
     if (!active) {
       return this.props.children ? this.props.children : null;
     }
@@ -124,24 +129,24 @@ const GuideAnchor = createReactClass<Props, State>({
     const body = (
       <GuideContainer>
         <GuideInputRow>
-          <StyledTitle>{guide.steps[step].title}</StyledTitle>
-          {step < guide.steps.length - 1 && (
+          <StyledTitle>{currentGuide.steps[step].title}</StyledTitle>
+          {step < currentGuide.steps.length - 1 && (
             <CloseLink onClick={this.handleDismiss} href="#" data-test-id="close-button">
               <CloseIcon />
             </CloseLink>
           )}
         </GuideInputRow>
         <StyledContent>
-          <div>{guide.steps[step].description}</div>
+          <div>{currentGuide.steps[step].description}</div>
           <Actions>
             <div>
-              {step < guide.steps.length - 1 ? (
+              {step < currentGuide.steps.length - 1 ? (
                 <Button priority="success" size="small" onClick={this.handleNextStep}>
                   {t('Next')}
                 </Button>
               ) : (
                 <Button priority="success" size="small" onClick={this.handleFinish}>
-                  {t(guide.steps.length === 1 ? 'Got It' : 'Done')}
+                  {t(currentGuide.steps.length === 1 ? 'Got It' : 'Done')}
                 </Button>
               )}
             </div>

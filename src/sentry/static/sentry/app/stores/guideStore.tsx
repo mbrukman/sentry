@@ -1,18 +1,16 @@
 import {browserHistory} from 'react-router';
 import Reflux from 'reflux';
-import * as Sentry from '@sentry/browser';
 
 import {Client} from 'app/api';
-import {Guide, Guides, GuideStep, GuideData} from 'app/components/assistant/types';
-import {LightWeightOrganization} from 'app/types';
+import {Guide} from 'app/components/assistant/types';
 import {trackAnalyticsEvent} from 'app/utils/analytics';
 import ConfigStore from 'app/stores/configStore';
-import getGuideContent from 'app/components/assistant/getGuideContent';
+import getGuidesContent from 'app/components/assistant/getGuidesContent';
 import GuideActions from 'app/actions/guideActions';
 import OrganizationsActions from 'app/actions/organizationsActions';
 
 type State = {
-  guides: Guides;
+  guides: Guide[];
   anchors: Set<string>;
   currentGuide: Guide | null;
   currentStep: number;
@@ -27,7 +25,7 @@ const GuideStore = Reflux.createStore({
       /**
        * All tooltip guides
        */
-      guides: {},
+      guides: [],
       /**
        * Anchors that are currently mounted
        */
@@ -71,23 +69,37 @@ const GuideStore = Reflux.createStore({
     this.updateCurrentGuide();
   },
 
-  onSetActiveOrganization(data: LightWeightOrganization) {
+  onSetActiveOrganization(data) {
     this.state.orgId = data ? data.id : null;
     this.updateCurrentGuide();
   },
 
-  onFetchSucceeded(data: GuideData) {
+  onFetchSucceeded(data) {
     // It's possible we can get empty responses (seems to be Firefox specific)
     // Do nothing if `data` is empty
     if (!data) {
       return;
     }
-    this.updateGuidesWithContent(data);
+
+    const guidesContent = getGuidesContent();
+
+    // Map server guide state (i.e. seen status) with guide content
+    const guides = data.map(serverGuide => ({
+      ...serverGuide,
+      ...guidesContent.find(content => serverGuide.guide === content.guide),
+    }));
+
+    this.state.guides = guides;
+    this.updateCurrentGuide();
   },
 
   onCloseGuide() {
     const {currentGuide} = this.state;
-    this.state.guides[currentGuide.key].seen = true;
+    this.state.guides.map(guide => {
+      if (guide.guide === currentGuide.guide) {
+        guide.seen = true;
+      }
+    });
     this.state.forceShow = false;
     this.updateCurrentGuide();
   },
@@ -107,41 +119,24 @@ const GuideStore = Reflux.createStore({
     this.updateCurrentGuide();
   },
 
-  recordCue(id: number) {
+  recordCue(guide) {
     const data = {
+      guide,
       eventKey: 'assistant.guide_cued',
       eventName: 'Assistant Guide Cued',
-      guide: id,
       organization_id: this.state.orgId,
     };
     trackAnalyticsEvent(data);
   },
 
-  updateGuidesWithContent(data: GuideData) {
-    try {
-      const content = getGuideContent();
-      const guides = Object.keys(data).reduce((acc, key) => {
-        if (key in content) {
-          acc[key] = {...data[key], ...content[key]};
-        }
-        return acc;
-      }, {});
-
-      this.state.guides = guides;
-      this.updateCurrentGuide();
-    } catch (e) {
-      Sentry.captureException(e);
-    }
-  },
-
-  updatePrevGuide(bestGuide: Guide) {
+  updatePrevGuide(bestGuide) {
     const {prevGuide} = this.state;
     if (!bestGuide) {
       return;
     }
 
-    if (!prevGuide || prevGuide.id !== bestGuide.id) {
-      this.recordCue(bestGuide.id);
+    if (!prevGuide || prevGuide.guide !== bestGuide.guide) {
+      this.recordCue(bestGuide.guide);
       this.state.prevGuide = bestGuide;
     }
   },
@@ -157,11 +152,9 @@ const GuideStore = Reflux.createStore({
   updateCurrentGuide() {
     const {anchors, guides, forceShow} = this.state;
 
-    let availableGuides = Object.keys(guides)
-      .sort()
-      .filter(key =>
-        guides[key].required_targets.every((target: string) => anchors.has(target))
-      );
+    let guideOptions = guides
+      .sort((a, b) => a.guide.localeCompare(b.guide))
+      .filter(guide => guide.requiredTargets.every(target => anchors.has(target)));
 
     if (!forceShow) {
       const user = ConfigStore.get('user');
@@ -169,34 +162,32 @@ const GuideStore = Reflux.createStore({
       const discoverDate = new Date(2020, 1, 6);
       const userDateJoined = new Date(user?.dateJoined);
 
-      availableGuides = availableGuides.filter(key => {
-        if (guides[key].seen) {
+      guideOptions = guideOptions.filter(({guide, seen}) => {
+        if (seen) {
           return false;
         }
         if (user?.isSuperuser) {
           return true;
         }
-        if (key === 'discover_sidebar' && userDateJoined >= discoverDate) {
+        if (guide === 'discover_sidebar' && userDateJoined >= discoverDate) {
           return false;
         }
         return userDateJoined > assistantThreshold;
       });
     }
 
-    let bestGuide = null;
-    if (availableGuides.length > 0) {
-      const key = availableGuides[0];
-      bestGuide = {
-        key,
-        ...guides[key],
-        steps: guides[key].steps.filter(
-          (step: GuideStep) => step.target && anchors.has(step.target)
-        ),
-      };
-    }
+    const topGuide =
+      guideOptions.length > 0
+        ? {
+            ...guideOptions[0],
+            steps: guideOptions[0].steps.filter(
+              step => step.target && anchors.has(step.target)
+            ),
+          }
+        : null;
 
-    this.updatePrevGuide(bestGuide);
-    this.state.currentGuide = bestGuide;
+    this.updatePrevGuide(topGuide);
+    this.state.currentGuide = topGuide;
     this.state.currentStep = 0;
     this.trigger(this.state);
   },
