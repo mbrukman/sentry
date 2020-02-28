@@ -29,7 +29,8 @@ export const getAnalyticsSessionId = () => {
   return window.sessionStorage.getItem(INTEGRATIONS_ANALYTICS_SESSION_KEY);
 };
 
-export const isIntegrationDirectoryActive = variant => {
+export const isIntegrationDirectoryActive = (organization: Organization | undefined) => {
+  const variant = organization?.experiments?.IntegrationDirectoryExperiment;
   if (localStorage.getItem(USE_INTEGRATION_DIRECTORY) === '1') {
     return true;
   } else if (localStorage.getItem(USE_INTEGRATION_DIRECTORY) === '0') {
@@ -135,9 +136,7 @@ export const trackIntegrationEvent = (
     analytics_session_id: sessionId,
     organization_id: org?.id,
     role: org?.role,
-    integration_directory_active: isIntegrationDirectoryActive(
-      org?.experiments?.IntegrationDirectoryExperiment
-    ),
+    integration_directory_active: isIntegrationDirectoryActive(org),
     ...analyticsParams,
   };
 
