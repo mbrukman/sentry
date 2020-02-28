@@ -2,14 +2,16 @@ import {browserHistory} from 'react-router';
 import Reflux from 'reflux';
 
 import {Client} from 'app/api';
-import {Guide} from 'app/components/assistant/types';
+import {Guide, GuidesServerData, GuidesContent} from 'app/components/assistant/types';
 import {trackAnalyticsEvent} from 'app/utils/analytics';
 import ConfigStore from 'app/stores/configStore';
 import getGuidesContent from 'app/components/assistant/getGuidesContent';
 import GuideActions from 'app/actions/guideActions';
 import OrganizationsActions from 'app/actions/organizationsActions';
 
-type State = {
+const guidesContent: GuidesContent = getGuidesContent();
+
+type GuideStoreState = {
   guides: Guide[];
   anchors: Set<string>;
   currentGuide: Guide | null;
@@ -19,7 +21,15 @@ type State = {
   prevGuide: Guide | null;
 };
 
-const GuideStore = Reflux.createStore({
+type GuideStoreInterface = {
+  onFetchSucceeded: (data: GuidesServerData) => void;
+  onRegisterAnchor: (target: string) => void;
+  onUnregisterAnchor: (target: string) => void;
+  recordCue: (guide: string) => void;
+  updatePrevGuide: (nextGuide: Guide | null) => void;
+};
+
+const guideStoreConfig: Reflux.StoreDefinition & GuideStoreInterface = {
   init() {
     this.state = {
       /**
@@ -50,7 +60,7 @@ const GuideStore = Reflux.createStore({
        * The previously shown guide
        */
       prevGuide: null,
-    } as State;
+    } as GuideStoreState;
 
     this.api = new Client();
     this.listenTo(GuideActions.fetchSucceeded, this.onFetchSucceeded);
@@ -81,12 +91,10 @@ const GuideStore = Reflux.createStore({
       return;
     }
 
-    const guidesContent = getGuidesContent();
-
-    // Map server guide state (i.e. seen status) with guide content
-    const guides = data.map(serverGuide => ({
-      ...serverGuide,
-      ...guidesContent.find(content => serverGuide.guide === content.guide),
+    // map server guide state (i.e. seen status) with guide content
+    const guides = guidesContent.map(guideContent => ({
+      ...guideContent,
+      ...data.find(serverGuide => serverGuide.guide === guideContent.guide),
     }));
 
     this.state.guides = guides;
@@ -96,7 +104,7 @@ const GuideStore = Reflux.createStore({
   onCloseGuide() {
     const {currentGuide} = this.state;
     this.state.guides.map(guide => {
-      if (guide.guide === currentGuide.guide) {
+      if (guide.guide === currentGuide?.guide) {
         guide.seen = true;
       }
     });
@@ -109,12 +117,12 @@ const GuideStore = Reflux.createStore({
     this.trigger(this.state);
   },
 
-  onRegisterAnchor(target: string) {
+  onRegisterAnchor(target) {
     this.state.anchors.add(target);
     this.updateCurrentGuide();
   },
 
-  onUnregisterAnchor(target: string) {
+  onUnregisterAnchor(target) {
     this.state.anchors.delete(target);
     this.updateCurrentGuide();
   },
@@ -129,15 +137,15 @@ const GuideStore = Reflux.createStore({
     trackAnalyticsEvent(data);
   },
 
-  updatePrevGuide(bestGuide) {
+  updatePrevGuide(nextGuide) {
     const {prevGuide} = this.state;
-    if (!bestGuide) {
+    if (!nextGuide) {
       return;
     }
 
-    if (!prevGuide || prevGuide.guide !== bestGuide.guide) {
-      this.recordCue(bestGuide.guide);
-      this.state.prevGuide = bestGuide;
+    if (!prevGuide || prevGuide.guide !== nextGuide.guide) {
+      this.recordCue(nextGuide.guide);
+      this.state.prevGuide = nextGuide;
     }
   },
 
@@ -163,7 +171,7 @@ const GuideStore = Reflux.createStore({
       const userDateJoined = new Date(user?.dateJoined);
 
       guideOptions = guideOptions.filter(({guide, seen}) => {
-        if (seen) {
+        if (seen !== false) {
           return false;
         }
         if (user?.isSuperuser) {
@@ -176,7 +184,7 @@ const GuideStore = Reflux.createStore({
       });
     }
 
-    const topGuide =
+    const nextGuide =
       guideOptions.length > 0
         ? {
             ...guideOptions[0],
@@ -186,11 +194,13 @@ const GuideStore = Reflux.createStore({
           }
         : null;
 
-    this.updatePrevGuide(topGuide);
-    this.state.currentGuide = topGuide;
+    this.updatePrevGuide(nextGuide);
+    this.state.currentGuide = nextGuide;
     this.state.currentStep = 0;
     this.trigger(this.state);
   },
-});
+};
 
-export default GuideStore;
+type GuideStore = Reflux.Store & GuideStoreInterface;
+
+export default Reflux.createStore(guideStoreConfig) as GuideStore;

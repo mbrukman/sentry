@@ -10,6 +10,13 @@ export type GuideStep = {
   description: React.ReactNode;
 };
 
+export type Guide = {
+  guide: string;
+  requiredTargets: string[];
+  steps: GuideStep[];
+  seen?: boolean;
+};
+
 export type GuidesContent = {
   guide: string;
   /**
@@ -20,14 +27,7 @@ export type GuidesContent = {
   steps: GuideStep[];
 }[];
 
-export type ServerGuides = {
+export type GuidesServerData = {
   guide: string;
   seen: boolean;
 }[];
-
-export type Guide = {
-  guide: string;
-  requiredTargets: string[];
-  steps: GuideStep[];
-  seen: string;
-};
