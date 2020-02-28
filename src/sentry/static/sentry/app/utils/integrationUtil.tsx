@@ -29,7 +29,7 @@ export const getAnalyticsSessionId = () => {
   return window.sessionStorage.getItem(INTEGRATIONS_ANALYTICS_SESSION_KEY);
 };
 
-export const isIntegrationDirectoryActive = (organization: Organization | undefined) => {
+export const isIntegrationDirectoryActive = (organization?: Organization) => {
   const variant = organization?.experiments?.IntegrationDirectoryExperiment;
   if (localStorage.getItem(USE_INTEGRATION_DIRECTORY) === '1') {
     return true;
